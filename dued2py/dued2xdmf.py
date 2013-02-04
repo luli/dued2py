@@ -26,8 +26,10 @@ def parse_one_file(args):
     path, xshape = args
     # this fixes the bug with the exponent overflow (such as 1.23233-126)
     with gzip.open(path) as fo:
-        with StringIO(re.sub(r'(?<=\d)-(?=\d)', 'E-', fo.read())) as f:
-            d = np.loadtxt(f)
+        f = StringIO(re.sub(r'(?<=\d)-(?=\d)', 'E-', fo.read()))
+        d = np.loadtxt(f)
+        #f.close()
+        del f
 
     d = d.reshape((xshape[1], xshape[2],-1))
     return d
@@ -106,22 +108,22 @@ class ParseDued(object):
         """
         #zlib_filter = tables.Filters(complevel=5,complib='zlib')
         h5file = tables.openFile(filename+'.h5', mode = "w")#, filter=zlib_filter)
-        for key, val in dict(XY=d[...,2:4], V=d[...,4:6]).iteritems():
+        for key, val in dict(XY=d[...,2:4], vel=d[...,4:6]).iteritems():
             cgroup = h5file.createGroup(h5file.root, key)
             for idx in range(d.shape[0]):
                 h5file.createArray(cgroup, 'frame_{0:04d}'.format(idx),
                             val[idx].reshape((-1,2)), "")
 
-        for key, val in dict(rho=16,Te=6,Ti=7,Tr=8, Zstar=9,P=10,Pi=11,Pe=12,E=13,Ei=14,
-                Ee=15,Ne=17,Ni=18,rhoN=19, Mass=20).iteritems():
+        for key, val in dict(dens=16,tele=6,tion=7,trad=8, zbar=9,pres=10,pion=11,pele=12,eint=13,eion=14,
+                eele=15,Ne=17,Ni=18,densN=19, Mass=20).iteritems():
             cgroup = h5file.createGroup(h5file.root, key) 
             for idx in range(d.shape[0]):
                 h5file.createArray(cgroup, 'frame_{0:04d}'.format(idx),
                         d[idx,:-1,:-1,val].reshape((-1)), "")
-        rho0 = d[0,:-1,:-1,16]
-        targ = np.nan*np.ones(rho0.shape)
-        for idx, val in enumerate(np.unique(rho0)):
-            targ = np.where(rho0==val, idx, targ)
+        dens0 = d[0,:-1,:-1,16]
+        targ = np.nan*np.ones(dens0.shape)
+        for idx, val in enumerate(np.unique(dens0)):
+            targ = np.where(dens0==val, idx, targ)
         h5file.createArray('/', 'targ', targ)
 
 
@@ -168,23 +170,23 @@ class ParseDued(object):
         """)
 
         var_dict = [dict(key=el[0],name=el[1], attr_type=el[2] and 'Vector' or 'Scalar',
-                        dim=el[2], center= (el[0]=='V') and 'Node' or 'Cell') for el in [
-                ('rho','rho', 0),
-                ('V','Velocity',1),
-                ('Te','Te', 0),
-                ('Ti','Ti', 0),
-                ('Tr','Tr', 0),
-                ('Zstar','Zstar', 0),
-                ('P','P', 0),
-                ('Pi','Pi', 0),
-                ('Pe','Pe', 0),
-                ('E','E', 0),
-                ('Ei','Ei', 0),
-                ('Ee','Ee', 0),
-                ('Ne','ne', 0),
-                ('Ni','ni', 0),
-                ('rhoN','rho normalised', 0),
-                ('Mass','cell mass', 0)
+                        dim=el[2], center= (el[0]=='vel') and 'Node' or 'Cell') for el in [
+                  ( 'dens'  , 'dens'            , 0 )  , 
+                  ( 'vel'   , 'Velocity'        , 1 )  , 
+                  ( 'tele'  , 'tele'            , 0 )  , 
+                  ( 'tion'  , 'tion'            , 0 )  , 
+                  ( 'trad'  , 'trad'            , 0 )  , 
+                  ( 'Zstar' , 'Zstar'           , 0 )  , 
+                  ( 'pres'  , 'pres'            , 0 )  , 
+                  ( 'pion'  , 'pion'            , 0 )  , 
+                  ( 'pele'  , 'pele'            , 0 )  , 
+                  ( 'eint'  , 'eint'            , 0 )  , 
+                  ( 'eion'  , 'eion'            , 0 )  , 
+                  ( 'eele'  , 'eele'            , 0 )  , 
+                  ( 'Ne'    , 'ne'              , 0 )  , 
+                  ( 'Ni'    , 'ni'              , 0 )  , 
+                  ( 'densN' , 'dens normalised' , 0 )  , 
+                  ( 'Mass'  , 'cell mass'       , 0 )  , 
             ]]
             # var name, var name long, (0:scalar, 1:vector)
 
