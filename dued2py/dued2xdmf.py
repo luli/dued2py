@@ -47,7 +47,7 @@ class ParseDued(object):
         - t:   [t_0, dt, number of timesteps]
 
     """
-    def __init__(self, folder):
+    def __init__(self, folder, parallel=True):
         """
         Parse the forder containing dued ouput.
         An example would be './dued_simulation/out/gpl/'
@@ -61,7 +61,12 @@ class ParseDued(object):
         frames = sorted([osp.join(self.data_path, el)  for el in os.listdir(self.data_path) if re.match(r'frm\d+.gpl.gz', el)])
         self._get_shape(frames)
 
-        self.d = np.array(p.map(parse_one_file,
+        if parallel:
+            _map = p.map
+        else:
+            _map = map
+
+        self.d = np.array(_map(parse_one_file,
             zip(frames, [self.xshape for el in range(len(frames))])))
 
         # cropping fantom cells, not sure this is correct
@@ -171,22 +176,22 @@ class ParseDued(object):
 
         var_dict = [dict(key=el[0],name=el[1], attr_type=el[2] and 'Vector' or 'Scalar',
                         dim=el[2], center= (el[0]=='vel') and 'Node' or 'Cell') for el in [
-                  ( 'dens'  , 'dens'            , 0 )  , 
-                  ( 'vel'   , 'Velocity'        , 1 )  , 
-                  ( 'tele'  , 'tele'            , 0 )  , 
-                  ( 'tion'  , 'tion'            , 0 )  , 
-                  ( 'trad'  , 'trad'            , 0 )  , 
-                  ( 'Zstar' , 'Zstar'           , 0 )  , 
-                  ( 'pres'  , 'pres'            , 0 )  , 
-                  ( 'pion'  , 'pion'            , 0 )  , 
-                  ( 'pele'  , 'pele'            , 0 )  , 
-                  ( 'eint'  , 'eint'            , 0 )  , 
-                  ( 'eion'  , 'eion'            , 0 )  , 
-                  ( 'eele'  , 'eele'            , 0 )  , 
-                  ( 'Ne'    , 'ne'              , 0 )  , 
-                  ( 'Ni'    , 'ni'              , 0 )  , 
-                  ( 'densN' , 'dens normalised' , 0 )  , 
-                  ( 'Mass'  , 'cell mass'       , 0 )  , 
+                  ( 'dens'  , 'dens'            , 0 )  ,
+                  ( 'vel'   , 'Velocity'        , 1 )  ,
+                  ( 'tele'  , 'tele'            , 0 )  ,
+                  ( 'tion'  , 'tion'            , 0 )  ,
+                  ( 'trad'  , 'trad'            , 0 )  ,
+                  ( 'Zstar' , 'Zstar'           , 0 )  ,
+                  ( 'pres'  , 'pres'            , 0 )  ,
+                  ( 'pion'  , 'pion'            , 0 )  ,
+                  ( 'pele'  , 'pele'            , 0 )  ,
+                  ( 'eint'  , 'eint'            , 0 )  ,
+                  ( 'eion'  , 'eion'            , 0 )  ,
+                  ( 'eele'  , 'eele'            , 0 )  ,
+                  ( 'Ne'    , 'ne'              , 0 )  ,
+                  ( 'Ni'    , 'ni'              , 0 )  ,
+                  ( 'densN' , 'dens normalised' , 0 )  ,
+                  ( 'Mass'  , 'cell mass'       , 0 )  ,
             ]]
             # var name, var name long, (0:scalar, 1:vector)
 
@@ -206,6 +211,8 @@ def call_from_cli():
                     Requires python2.7, numpy, jinja2 and PyTables
                 """)
     parser.add_argument('folder', help='simulation folder')
+    parser.add_argument('-nt', '--nothreading', help='disable threading',
+            default=False, action='store_true')
 
     args = parser.parse_args()
-    ParseDued(args.folder).to_xdmf()
+    ParseDued(args.folder, parallel=~args.nothreading).to_xdmf()
