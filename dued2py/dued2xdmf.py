@@ -4,8 +4,7 @@
 # 02.2012
 
 import sys
-import os
-import os.path as osp
+import os, os.path 
 import re
 import gzip
 import socket
@@ -47,18 +46,34 @@ class ParseDued(object):
         - t:   [t_0, dt, number of timesteps]
 
     """
-    def __init__(self, folder, parallel=True):
+    def __init__(self, folder, parallel=True, units='hedp', flash_comp=False):
         """
         Parse the forder containing dued ouput.
-        An example would be './dued_simulation/out/gpl/'
+        Parameters:
+        -----------
+            - folder [str]    : path to DUED simulation folder.
+            - parallel [bool] : use multithreading.
+            - units [str]     : units to use in ['hedp', 'cgs']. flash_comp
+                                  forces cgs.
+            - flash_comp [str]: transform units and grid so it can be
+                                   more easily plotted besides a flash simulation.
+
         """
-        self.sim_path = osp.abspath(folder)
-        self.data_path = osp.join(osp.abspath(folder),'out/gpl')
-        if not osp.exists(self.data_path):
+        folder = os.path.abspath(folder)
+        self.sim_path = folder
+        self.data_path = os.path.join(os.path.abspath(folder),'out/gpl')
+        if units not in ['hedp', 'cgs']:
+            raise ValueError("'units' should be in ['hedp', 'cgs']")
+        self.units = units
+        self.flash_comp = flash_comp
+        if flash_comp:
+            self.units == "cgs"
+        if not os.path.exists(self.data_path):
             print 'Error: Path does not exists {0}'.format(self.data_path)
             sys.exit(1)
-        self.output_name = osp.split(folder)[1]
-        frames = sorted([osp.join(self.data_path, el)  for el in os.listdir(self.data_path) if re.match(r'frm\d+.gpl.gz', el)])
+        self.output_name = os.path.split(folder)[1]
+        frames = sorted([os.path.join(self.data_path, el)\
+                for el in os.listdir(self.data_path) if re.match(r'frm\d+.gpl.gz', el)])
         self._get_shape(frames)
 
         if parallel:
@@ -71,7 +86,7 @@ class ParseDued(object):
 
         # cropping fantom cells, not sure this is correct
         self.d = self.d[:,1:-1,1:-1,:]
-        self._reshape_data(to_cgs=True)
+        self._reshape_data()
 
     def to_xdmf(self, filename=None):
         """
@@ -97,13 +112,17 @@ class ParseDued(object):
                 self.xshape.prod()*3e-5)
 
 
-    def _reshape_data(self, to_cgs=True):
+    def _reshape_data(self):
         """
         Transform DUED grid so it can be plotted side by side with FLASH output
         """
-        self.d[...,[2,3]] = -self.d[...,[3,2]]
-        if to_cgs:
-            self.d[...,2:4] =  self.d[...,2:4]*1e-4
+        if self.flash_comp:
+            # change x and y axis
+            self.d[...,[2,3]] = -self.d[...,[3,2]]
+            self.d[...,[4,5]] = -self.d[...,[5,4]]
+        if self.units == 'cgs':
+            self.d[...,2:4] =  self.d[...,2:4]*1e-4 # to μm
+            self.d[:,0,0,-1] = self.d[:,0,0,-1]*1e-9 # to ns
             #self.d[...,6:9] =  self.d[...,6:9]*11640.
             #self.d[...,10:13] =  self.d[...,10:13]*1e12
 
@@ -163,7 +182,7 @@ class ParseDued(object):
                         </Geometry>
                         {% for el in var -%}
                         <Attribute Name="{{el.name}}" AttributeType="{{el.attr_type}}" Center="{{el.center}}">
-                            <DataItem NumberType="Float" Precision="8" Dimensions="{{(d.shape[1]-1)*(d.shape[2]-1)}}{% if el.dim %} 2{% endif %}" Format="HDF">{{filename}}.h5:/{{el.key}}/frame_{{'%04d' % idx}}</DataItem>
+                            <DataItem NumberType="Float" Precision="8" Dimensions="{% if not el.dim %}{{(d.shape[1]-1)*(d.shape[2]-1)}}{% else %}{{(d.shape[1])*(d.shape[2])}} 2{% endif %}" Format="HDF">{{filename}}.h5:/{{el.key}}/frame_{{'%04d' % idx}}</DataItem>
                         </Attribute>
                         {% endfor -%}
                     </Grid>
@@ -200,7 +219,7 @@ class ParseDued(object):
             f.write(tmpl.render(d=d[...,0],
             filename=filename,
             var=var_dict,
-            t= d[:,0,0,-1]*1e-9))
+            t= d[:,0,0,-1]))
 
 def call_from_cli():
     import argparse
@@ -213,6 +232,12 @@ def call_from_cli():
     parser.add_argument('folder', help='simulation folder')
     parser.add_argument('-nt', '--nothreading', help='disable threading',
             default=False, action='store_true')
+    parser.add_argument('-u', '--units', help="Choose units hedp (default) or cgs",
+            default='hedp', action='store')
+    parser.add_argument('-c', '--flashcomp', help="Make it easier to compare with FLASH",
+            default=False, action='store_true')
+    parser.add_argument('--version', action='version', version='%(prog)s 0.1.1')
 
     args = parser.parse_args()
-    ParseDued(args.folder, parallel=~args.nothreading).to_xdmf()
+
+    ParseDued(args.folder, parallel=~args.nothreading, units=args.units, flash_comp=args.flashcomp).to_xdmf()
