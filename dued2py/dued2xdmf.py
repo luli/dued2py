@@ -223,6 +223,7 @@ class ParseDued(object):
 
 def call_from_cli():
     import argparse
+    import sys
 
     parser = argparse.ArgumentParser(description="""
                     This script allows to convert dued gnuplot output to XDMF format, readable by Visit.
@@ -237,6 +238,10 @@ def call_from_cli():
     parser.add_argument('-c', '--flashcomp', help="Make it easier to compare with FLASH",
             default=False, action='store_true')
     parser.add_argument('--version', action='version', version='%(prog)s 0.1.1')
+
+    if len(sys.argv)==1:
+        parser.print_help()
+        sys.exit(1)
 
     args = parser.parse_args()
 
