@@ -136,14 +136,14 @@ class ParseDued(object):
             cgroup = h5file.createGroup(h5file.root, key)
             for idx in range(d.shape[0]):
                 h5file.createArray(cgroup, 'frame_{0:04d}'.format(idx),
-                            val[idx].reshape((-1,2)), "")
+                            val[idx], "")
 
         for key, val in dict(dens=16,tele=6,tion=7,trad=8, zbar=9,pres=10,pion=11,pele=12,eint=13,eion=14,
                 eele=15,Ne=17,Ni=18,densN=19, Mass=20).iteritems():
             cgroup = h5file.createGroup(h5file.root, key) 
             for idx in range(d.shape[0]):
                 h5file.createArray(cgroup, 'frame_{0:04d}'.format(idx),
-                        d[idx,:-1,:-1,val].reshape((-1)), "")
+                        d[idx,:-1,:-1,val], "")
         dens0 = d[0,:-1,:-1,16]
         targ = np.nan*np.ones(dens0.shape)
         for idx, val in enumerate(np.unique(dens0)):
@@ -178,11 +178,11 @@ class ParseDued(object):
                         <Time Value="{{t[idx]}}" />
                         <Topology TopologyType="2DSMesh" Dimensions="{{d.shape[1]}} {{d.shape[2]}}"/>
                         <Geometry GeometryType="XY">
-                            <DataItem NumberType="Float" Precision="8" Dimensions="{{d[0].size}} 2" Format="HDF">{{filename}}.h5:/XY/frame_{{'%04d' % idx}}</DataItem>
+                            <DataItem NumberType="Float" Precision="8" Dimensions="{{d.shape[1]}} {{d.shape[2]}} 2" Format="HDF">{{filename}}.h5:/XY/frame_{{'%04d' % idx}}</DataItem>
                         </Geometry>
                         {% for el in var -%}
                         <Attribute Name="{{el.name}}" AttributeType="{{el.attr_type}}" Center="{{el.center}}">
-                            <DataItem NumberType="Float" Precision="8" Dimensions="{% if not el.dim %}{{(d.shape[1]-1)*(d.shape[2]-1)}}{% else %}{{(d.shape[1])*(d.shape[2])}} 2{% endif %}" Format="HDF">{{filename}}.h5:/{{el.key}}/frame_{{'%04d' % idx}}</DataItem>
+                            <DataItem NumberType="Float" Precision="8" Dimensions="{% if not el.dim %}{{(d.shape[1]-1)}} {{(d.shape[2]-1)}}{% else %}{{(d.shape[1])}} {{(d.shape[2])}} 2{% endif %}" Format="HDF">{{filename}}.h5:/{{el.key}}/frame_{{'%04d' % idx}}</DataItem>
                         </Attribute>
                         {% endfor -%}
                     </Grid>
