@@ -132,7 +132,7 @@ class ParseDued(object):
         """
         #zlib_filter = tables.Filters(complevel=5,complib='zlib')
         h5file = tables.openFile(filename+'.h5', mode = "w")#, filter=zlib_filter)
-        for key, val in dict(XY=d[...,2:4], vel=d[...,4:6]).iteritems():
+        for key, val in dict(X=d[...,2],Y=d[...,3],Z=np.zeros(d[...,3].shape), vel=d[...,4:6]).iteritems():
             cgroup = h5file.createGroup(h5file.root, key)
             for idx in range(d.shape[0]):
                 h5file.createArray(cgroup, 'frame_{0:04d}'.format(idx),
@@ -177,8 +177,10 @@ class ParseDued(object):
                     <Grid Name="Mesh" GridType="Uniform">
                         <Time Value="{{t[idx]}}" />
                         <Topology TopologyType="2DSMesh" Dimensions="{{d.shape[1]}} {{d.shape[2]}}"/>
-                        <Geometry GeometryType="XY">
-                            <DataItem NumberType="Float" Precision="8" Dimensions="{{d.shape[1]}} {{d.shape[2]}} 2" Format="HDF">{{filename}}.h5:/XY/frame_{{'%04d' % idx}}</DataItem>
+                        <Geometry GeometryType="X_Y_Z">
+                            <DataItem NumberType="Float" Precision="8" Dimensions="{{d.shape[1]}} {{d.shape[2]}}" Format="HDF">{{filename}}.h5:/X/frame_{{'%04d' % idx}}</DataItem>
+                            <DataItem NumberType="Float" Precision="8" Dimensions="{{d.shape[1]}} {{d.shape[2]}}" Format="HDF">{{filename}}.h5:/Y/frame_{{'%04d' % idx}}</DataItem>
+                            <DataItem NumberType="Float" Precision="8" Dimensions="{{d.shape[1]}} {{d.shape[2]}}" Format="HDF">{{filename}}.h5:/Z/frame_{{'%04d' % idx}}</DataItem>
                         </Geometry>
                         {% for el in var -%}
                         <Attribute Name="{{el.name}}" AttributeType="{{el.attr_type}}" Center="{{el.center}}">
@@ -200,7 +202,7 @@ class ParseDued(object):
                   ( 'tele'  , 'tele'            , 0 )  ,
                   ( 'tion'  , 'tion'            , 0 )  ,
                   ( 'trad'  , 'trad'            , 0 )  ,
-                  ( 'Zstar' , 'Zstar'           , 0 )  ,
+                  ( 'zbar' , 'zbar'           , 0 )  ,
                   ( 'pres'  , 'pres'            , 0 )  ,
                   ( 'pion'  , 'pion'            , 0 )  ,
                   ( 'pele'  , 'pele'            , 0 )  ,
