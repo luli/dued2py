@@ -18,15 +18,16 @@ A Python version 2.7 should be installed together with the Numpy, PyTables and J
 Installation notes
 ==================
 
-```
-$ python setup.py install --user
-```
+The `dued2py` module can be installed in home directory with::
+
+    $ python setup.py install --user
 
 Example of use
 ==============
 
-```
-$ dued2py folder_with_dued_output_files/
-```
+::
+
+    $ dued2py folder_with_dued_output_files/
+
 
 
