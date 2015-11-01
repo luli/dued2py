@@ -22,6 +22,9 @@ class DuedSim(object):
             X,Y =  np.rollaxis(1e4*self.f.getNode('/XY/frame_{0:04}'.format(step)
                 ).read().reshape((self.shape[0]+1, self.shape[1]+1, 2)), 2)
             return -Y, -X
+        elif field  in 'XY':
+            return - self.f.getNode('/{0}/frame_{1:04}'.format(field, step)
+                          ).read().reshape((self.shape[0]+1, self.shape[1]+1))
         elif field == "targ":
             self.f.getNode('/targ').read()
         else:

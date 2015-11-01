@@ -89,6 +89,11 @@ class ParseDued(object):
         # cropping fantom cells, not sure this is correct
         self.d = self.d[:,1:-1,1:-1,:]
         self._reshape_data()
+        print "{0} - Parsed {1:.3f} ns ({2} plot files)".format(
+                    time.strftime("%H:%M:%S", time.gmtime()),
+                    self.d[:,0,0,-1].max(),
+                    self.d.shape[0]
+                    )
 
     def to_xdmf(self, filename=None):
         """
@@ -98,9 +103,9 @@ class ParseDued(object):
             filename = self.output_name
         self._save_h5(filename, self.d)
         self._generate_xml(filename, self.d)
-        print "{0} - XMDF file '{1}.xdmf' sucessfully created".format(
+        print "{0} - XMDF file '{1}.xdmf', sucessfully created".format(
                     time.strftime("%H:%M:%S", time.gmtime()),
-                    self.output_name
+                    self.output_name,
                     )
     def _get_shape(self, frames):
         # read array shape from header if necessary
