@@ -12,7 +12,7 @@ This module allows to read the simulation output of the DUED code and convert it
 Dependencies
 ============
 
-A Python version 2.7 should be installed together with the Numpy, PyTables and Jinja2 modules.
+This module requires Python 2.7 or 3.2-3.5 together with Numpy, PyTables and Jinja2 modules.
 
 
 Installation notes
