@@ -1,9 +1,11 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 # Copyright CNRS 2012,
 # Roman Yurchak (LULI)
 # This software is governed by the CeCILL-B license under French law and
 # abiding by the rules of distribution of free software.
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 
 import sys
 import os, os.path 
@@ -11,9 +13,10 @@ import re
 import gzip
 import socket
 import getpass
+import six
 import time
 from datetime import datetime
-from StringIO import StringIO
+from io import StringIO
 from multiprocessing import Pool
 
 import numpy as np
@@ -26,8 +29,10 @@ def parse_one_file(args):
     """
     path, xshape = args
     # this fixes the bug with the exponent overflow (such as 1.23233-126)
-    with gzip.open(path) as fo:
-        f = StringIO(re.sub(r'(?<=\d)-(?=\d)', 'E-', fo.read()))
+    with gzip.open(path, 'rt') as fo:
+        txt = fo.read()
+        txt = re.sub(r'(?<=\d)-(?=\d)', 'E-', txt)
+        f = StringIO(six.u(txt))
         d = np.loadtxt(f)
         #f.close()
         del f
@@ -71,7 +76,7 @@ class ParseDued(object):
         if flash_comp:
             self.units == "cgs"
         if not os.path.exists(self.data_path):
-            print 'Error: Path does not exists {0}'.format(self.data_path)
+            print('Error: Path does not exists {0}'.format(self.data_path))
             sys.exit(1)
         self.output_name = os.path.split(folder)[1]
         frames = sorted([os.path.join(self.data_path, el)\
@@ -83,17 +88,19 @@ class ParseDued(object):
         else:
             _map = map
 
-        self.d = np.array(_map(parse_one_file,
+        res = list(_map(parse_one_file,
             zip(frames, [self.xshape for el in range(len(frames))])))
 
+
+        self.d = np.array(res)
         # cropping fantom cells, not sure this is correct
         self.d = self.d[:,1:-1,1:-1,:]
         self._reshape_data()
-        print "{0} - Parsed {1:.3f} ns ({2} plot files)".format(
+        print("{0} - Parsed {1:.3f} ns ({2} plot files)".format(
                     time.strftime("%H:%M:%S", time.gmtime()),
                     self.d[:,0,0,-1].max(),
                     self.d.shape[0]
-                    )
+                    ))
 
     def to_xdmf(self, filename=None):
         """
@@ -103,10 +110,10 @@ class ParseDued(object):
             filename = self.output_name
         self._save_h5(filename, self.d)
         self._generate_xml(filename, self.d)
-        print "{0} - XMDF file '{1}.xdmf', sucessfully created".format(
+        print("{0} - XMDF file '{1}.xdmf', sucessfully created".format(
                     time.strftime("%H:%M:%S", time.gmtime()),
                     self.output_name,
-                    )
+                    ))
     def _get_shape(self, frames):
         # read array shape from header if necessary
         self.xshape = np.zeros(3, dtype=np.int)
@@ -114,9 +121,9 @@ class ParseDued(object):
         with gzip.open(frames[0],"rb") as f:
             header =  np.fromstring(f.readline()[7:], sep=' ')
         self.xshape[1:] = header[1:3]
-        print "{0} - Expected parsing time: {1:.1f} s".format(
+        print("{0} - Expected parsing time: {1:.1f} s".format(
                 time.strftime("%H:%M:%S", time.gmtime()),
-                self.xshape.prod()*3e-5)
+                self.xshape.prod()*3e-5))
 
 
     def _reshape_data(self):
@@ -139,14 +146,14 @@ class ParseDued(object):
         """
         #zlib_filter = tables.Filters(complevel=5,complib='zlib')
         h5file = tables.openFile(filename+'.h5', mode = "w")#, filter=zlib_filter)
-        for key, val in dict(X=d[...,2],Y=d[...,3],Z=np.zeros(d[...,3].shape), vel=d[...,4:6]).iteritems():
+        for key, val in dict(X=d[...,2],Y=d[...,3],Z=np.zeros(d[...,3].shape), vel=d[...,4:6]).items():
             cgroup = h5file.createGroup(h5file.root, key)
             for idx in range(d.shape[0]):
                 h5file.createArray(cgroup, 'frame_{0:04d}'.format(idx),
                             val[idx], "")
 
         for key, val in dict(dens=16,tele=6,tion=7,trad=8, zbar=9,pres=10,pion=11,pele=12,eint=13,eion=14,
-                eele=15,Ne=17,Ni=18,densN=19, Mass=20).iteritems():
+                eele=15,Ne=17,Ni=18,densN=19, Mass=20).items():
             cgroup = h5file.createGroup(h5file.root, key) 
             for idx in range(d.shape[0]):
                 h5file.createArray(cgroup, 'frame_{0:04d}'.format(idx),
@@ -254,4 +261,4 @@ def call_from_cli():
 
     args = parser.parse_args()
 
-    ParseDued(args.folder, parallel=~args.nothreading, units=args.units, flash_comp=args.flashcomp).to_xdmf()
+    ParseDued(args.folder, parallel=(not args.nothreading), units=args.units, flash_comp=args.flashcomp).to_xdmf()

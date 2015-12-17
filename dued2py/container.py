@@ -4,6 +4,9 @@
 # Roman Yurchak (LULI)
 # This software is governed by the CeCILL-B license under French law and
 # abiding by the rules of distribution of free software.
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
 
 import numpy as np
 import tables
