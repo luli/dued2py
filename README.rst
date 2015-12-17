@@ -20,7 +20,7 @@ Installation notes
 
 The `dued2py` module can be installed in home directory with::
 
-    $ python setup.py install --user
+    $ pip install git+https://github.com/luli/dued2py.git
 
 Example of use
 ==============
