@@ -12,6 +12,13 @@ setup(name='dued2py',
       author='Roman Yurchak',
       author_email='roman.yurchak@polytechnique.edu',
       packages=['dued2py'],
+      install_requires=[
+              "numpy >= 1.6",
+              "setuptools >= 16.0",
+              "tables",
+              "six",
+              "jinja2"
+              ],
       entry_points = {
           'console_scripts': ['dued2py = dued2py.dued2xdmf:call_from_cli']
         }
